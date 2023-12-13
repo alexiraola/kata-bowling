@@ -29,6 +29,11 @@ function calculateScore(shots: string) {
 
       return turnsScore(accScore + spareScore, turns, index + 1);
     }
+    if (isStrike(turns[index])) {
+      const strikeScore = score(turns, index) + score(turns, index + 1) + score(turns, index + 2);
+
+      return turnsScore(accScore + strikeScore, turns, index + 1);
+    }
     return turnsScore(accScore + score(turns, index), turns, index + 1);
   }
 
@@ -54,6 +59,14 @@ describe('Bowling', () => {
 
   it('should calculate spare correctly', () => {
     const shots = '5/ 5- -- -- -- -- -- -- -- --';
+
+    const score = calculateScore(shots);
+
+    expect(score).toBe(20);
+  });
+
+  it('should calculate strike correctly', () => {
+    const shots = 'X 23 -- -- -- -- -- -- -- --';
 
     const score = calculateScore(shots);
 
