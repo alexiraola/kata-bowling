@@ -1,76 +1,113 @@
-function calculateScore(shots: string) {
-  const turns = shots.split(' ').map(turn => turn.replace(/-/g, '0'));
+type Score = {
+  score: number,
+  rollIndex: number
+}
 
-  const isStrike = (turn: string) => turn === 'X';
-  const isSpare = (turn: string) => turn.includes('/');
+class BowlingGame {
+  private rolls: number[] = [];
+  private frames = Array.from({ length: 10 }).map((_, i) => i);
 
-  const score = (turns: string[], index: number) => {
-    if (index >= turns.length) {
-      return 0;
-    }
-
-    const turn = turns[index];
-
-    if (isStrike(turn)) {
-      return 10;
-    }
-    if (isSpare(turn)) {
-      return 10;
-    }
-    return parseInt(turn[0]) + parseInt(turn[1]);
+  roll(roll: number) {
+    this.rolls.push(roll);
   }
 
-  const turnsScore = (accScore: number, turns: string[], index: number) => {
-    if (index === turns.length) {
-      return accScore;
-    }
-    if (isSpare(turns[index])) {
-      const spareScore = score(turns, index) + score(turns, index + 1);
-
-      return turnsScore(accScore + spareScore, turns, index + 1);
-    }
-    if (isStrike(turns[index])) {
-      const strikeScore = score(turns, index) + score(turns, index + 1) + score(turns, index + 2);
-
-      return turnsScore(accScore + strikeScore, turns, index + 1);
-    }
-    return turnsScore(accScore + score(turns, index), turns, index + 1);
+  calculateScore() {
+    return this.frames.reduce<Score>((score) => {
+      return this.calculateFrameScore(score);
+    }, { score: 0, rollIndex: 0 }).score;
   }
 
-  return turnsScore(0, turns, 0);
+  private calculateFrameScore({ score, rollIndex }: Score): Score {
+    if (this.isStrike(rollIndex)) {
+      return this.calculateStrikeScore({ score, rollIndex });
+    }
+    if (this.isSpare(rollIndex)) {
+      return this.calculateSpareScore({ score, rollIndex });
+    }
+    return this.calculateNormalScore({ score, rollIndex });
+  }
+
+  private calculateNormalScore({ score, rollIndex }: Score) {
+    return {
+      score: score + this.rolls[rollIndex] + this.rolls[rollIndex + 1],
+      rollIndex: rollIndex + 2
+    }
+  }
+
+  private calculateStrikeScore({ score, rollIndex }: Score) {
+    return {
+      score: score + 10 + this.rolls[rollIndex + 1] + this.rolls[rollIndex + 2],
+      rollIndex: rollIndex + 1
+    }
+  }
+
+  private calculateSpareScore({ score, rollIndex }: Score) {
+    return {
+      score: score + 10 + this.rolls[rollIndex + 2],
+      rollIndex: rollIndex + 2
+    }
+  }
+
+  private isStrike(frameIndex: number) {
+    return this.rolls[frameIndex] === 10;
+  }
+
+  private isSpare(frameIndex: number) {
+    return this.rolls[frameIndex] + this.rolls[frameIndex + 1] === 10;
+  }
 }
 
 describe('Bowling', () => {
+  var game: BowlingGame;
+
+  const rollMany = (times: number, pins: number) => {
+    Array.from({ length: times }).forEach(() => game.roll(pins));
+  }
+
+  beforeEach(() => {
+    game = new BowlingGame();
+  })
+
   it('should calculate a full fail correctly', () => {
-    const shots = '-- -- -- -- -- -- -- -- -- --';
+    rollMany(20, 0);
 
-    const score = calculateScore(shots);
-
-    expect(score).toBe(0);
+    expect(game.calculateScore()).toBe(0);
   });
 
   it('should calculate points correctly', () => {
-    const shots = '11 11 11 11 11 11 11 11 11 11';
+    rollMany(20, 1);
 
-    const score = calculateScore(shots);
-
-    expect(score).toBe(20);
+    expect(game.calculateScore()).toBe(20);
   });
 
   it('should calculate spare correctly', () => {
-    const shots = '5/ 5- -- -- -- -- -- -- -- --';
+    game.roll(5);
+    game.roll(5);
+    game.roll(5);
+    rollMany(17, 0);
 
-    const score = calculateScore(shots);
-
-    expect(score).toBe(20);
+    expect(game.calculateScore()).toBe(20);
   });
 
   it('should calculate strike correctly', () => {
-    const shots = 'X 23 -- -- -- -- -- -- -- --';
+    game.roll(10);
+    game.roll(2);
+    game.roll(3);
+    rollMany(17, 0);
 
-    const score = calculateScore(shots);
+    expect(game.calculateScore()).toBe(20);
+  });
 
-    expect(score).toBe(20);
+  it('should calculate a perfect game', () => {
+    rollMany(12, 10);
+
+    expect(game.calculateScore()).toBe(300);
+  });
+
+  it('should calculate a spare in last turn', () => {
+    rollMany(21, 5);
+
+    expect(game.calculateScore()).toBe(150);
   });
 
 });
