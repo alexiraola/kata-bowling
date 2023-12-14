@@ -64,6 +64,13 @@ describe('Bowling', () => {
     Array.from({ length: times }).forEach(() => game.roll(pins));
   }
 
+  const rollManyCouple = (times: number, pins: [number, number]) => {
+    Array.from({ length: times }).forEach(() => {
+      game.roll(pins[0]);
+      game.roll(pins[1]);
+    });
+  }
+
   beforeEach(() => {
     game = new BowlingGame();
   })
@@ -108,6 +115,13 @@ describe('Bowling', () => {
     rollMany(21, 5);
 
     expect(game.calculateScore()).toBe(150);
+  });
+
+  it('should calculate a spare with different score in last turn', () => {
+    rollManyCouple(10, [8, 2]);
+    game.roll(8);
+
+    expect(game.calculateScore()).toBe(180);
   });
 
 });
